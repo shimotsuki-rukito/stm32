@@ -151,10 +151,13 @@ __ALIGN_BEGIN uint8_t USBD_LangIDDesc[USB_SIZ_STRING_LANGID] __ALIGN_END =
     HIBYTE(USBD_LANGID_STRING),
 };
 
+/* Fixed serial number matching real device: "10AECS0322003GZ" (Unicode) */
 uint8_t USBD_StringSerial[USB_SIZ_STRING_SERIAL] =
 {
-    USB_SIZ_STRING_SERIAL,
-    USB_DESC_TYPE_STRING,
+    USB_SIZ_STRING_SERIAL,          /* bLength  */
+    USB_DESC_TYPE_STRING,           /* bDescriptorType */
+    '1', 0, '0', 0, 'A', 0, 'E', 0, 'C', 0, 'S', 0, '0', 0, '3', 0,
+    '2', 0, '2', 0, '0', 0, '0', 0, '3', 0, 'G', 0, 'Z', 0,
 };
 
 #ifdef USB_OTG_HS_INTERNAL_DMA_ENABLED
@@ -257,11 +260,6 @@ uint8_t *USBD_USR_ManufacturerStrDescriptor(uint8_t speed, uint16_t * length)
 uint8_t *USBD_USR_SerialStrDescriptor(uint8_t speed, uint16_t * length)
 {
     *length = USB_SIZ_STRING_SERIAL;
-
-    /* Update the serial number string descriptor with the data from the unique
-     * ID */
-    Get_SerialNum();
-
     return (uint8_t *) USBD_StringSerial;
 }
 

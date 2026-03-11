@@ -1,41 +1,15 @@
 /**
   ******************************************************************************
   * @file    usbd_msc_hid_core.c
-  * @author  MCD Application Team
-  * @version V1.2.1
-  * @date    17-March-2018
-  * @brief   This file provides the HID core functions.
-  *
-  * @verbatim
-  *      
-  *          ===================================================================      
-  *                                composite HID_MSC
-  *          =================================================================== 
-  *      
-  * @note     In HS mode and when the DMA is used, all variables and data structures
-  *           dealing with the DMA during the transaction process should be 32-bit aligned.
-  *           
-  *      
-  *  @endverbatim
-  *
+  * @brief   Composite MTP + MSC device class.
+  *          Interface 0: MTP (Vendor Specific, driven by MS OS Descriptors)
+  *          Interface 1: MSC (Bulk-Only Transport)
   ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2015 STMicroelectronics.
-  * All rights reserved.</center></h2>
-  *
-  * This software component is licensed by ST under Ultimate Liberty license
-  * SLA0044, the "License"; You may not use this file except in compliance with
-  * the License. You may obtain a copy of the License at:
-  *                      <http://www.st.com/SLA0044>
-  *
-  ******************************************************************************
-  */ 
+  */
 
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_msc_hid_core.h"
 #include "usbd_msc_core.h"
-#include "usbd_hid_core.h"
 #include "usbd_desc.h"
 #include "usbd_req.h"
 
@@ -45,330 +19,285 @@
   */
 
 
-/** @defgroup USBD_HID 
-  * @brief usbd core module
-  * @{
-  */ 
-
-/** @defgroup USBD_HID_Private_TypesDefinitions
-  * @{
-  */ 
-/**
-  * @}
-  */ 
-
-
-/** @defgroup USBD_HID_Private_Defines
-  * @{
-  */ 
-
-/**
-  * @}
-  */ 
-
-
-/** @defgroup USBD_HID_Private_Macros
-  * @{
-  */ 
-/**
-  * @}
-  */ 
-
-
-
-
-/** @defgroup USBD_HID_Private_FunctionPrototypes
+/** @defgroup USBD_MSC_MTP
+  * @brief Composite MSC + MTP module
   * @{
   */
 
+/** @defgroup USBD_MSC_MTP_Private_FunctionPrototypes
+  * @{
+  */
 
-static uint8_t  USBD_MSC_HID_Init (void  *pdev, 
-                               uint8_t cfgidx);
+static uint8_t  USBD_MSC_HID_Init   (void *pdev, uint8_t cfgidx);
+static uint8_t  USBD_MSC_HID_DeInit (void *pdev, uint8_t cfgidx);
+static uint8_t  USBD_MSC_HID_Setup  (void *pdev, USB_SETUP_REQ *req);
+static uint8_t *USBD_MSC_HID_GetCfgDesc(uint8_t speed, uint16_t *length);
+static uint8_t  USBD_MSC_HID_DataIn (void *pdev, uint8_t epnum);
+static uint8_t  USBD_MSC_HID_DataOut(void *pdev, uint8_t epnum);
 
-static uint8_t  USBD_MSC_HID_DeInit (void  *pdev, 
-                                 uint8_t cfgidx);
-
-static uint8_t  USBD_MSC_HID_Setup (void  *pdev, 
-                                USB_SETUP_REQ *req);
-
-static uint8_t  *USBD_MSC_HID_GetCfgDesc (uint8_t speed, uint16_t *length);
-
-static uint8_t  USBD_MSC_HID_DataIn (void  *pdev, uint8_t epnum);
-static uint8_t  USBD_MSC_HID_DataOut(void *pdev , uint8_t epnum);
-
-extern uint8_t  USBD_HID_SOF (void  *pdev);
 /**
   * @}
-  */ 
+  */
 
-/** @defgroup USBD_HID_Private_Variables
+/** @defgroup USBD_MSC_MTP_Private_Variables
   * @{
-  */ 
+  */
 
-USBD_Class_cb_TypeDef  USBD_MSC_HID_cb = 
+USBD_Class_cb_TypeDef  USBD_MSC_HID_cb =
 {
-  USBD_MSC_HID_Init,
-  USBD_MSC_HID_DeInit,
-  USBD_MSC_HID_Setup,
-  NULL, /*EP0_TxSent*/  
-  NULL, /*EP0_RxReady*/
-  USBD_MSC_HID_DataIn, /*DataIn*/
-  USBD_MSC_HID_DataOut, /*DataOut*/
-  USBD_HID_SOF, /*SOF */
-  NULL,
-  NULL,      
-  USBD_MSC_HID_GetCfgDesc,
-#ifdef USB_OTG_HS_CORE  
-  USBD_MSC_HID_GetCfgDesc, /* use same config as per FS */
-#endif  
+    USBD_MSC_HID_Init,
+    USBD_MSC_HID_DeInit,
+    USBD_MSC_HID_Setup,
+    NULL,   /* EP0_TxSent  */
+    NULL,   /* EP0_RxReady */
+    USBD_MSC_HID_DataIn,
+    USBD_MSC_HID_DataOut,
+    NULL,   /* SOF         */
+    NULL,
+    NULL,
+    USBD_MSC_HID_GetCfgDesc,
+#ifdef USB_OTG_HS_CORE
+    USBD_MSC_HID_GetCfgDesc,  /* same descriptor for FS */
+#endif
 };
 
 #ifdef USB_OTG_HS_INTERNAL_DMA_ENABLED
-  #if defined ( __ICCARM__ ) /*!< IAR Compiler */
-    #pragma data_alignment=4   
+  #if defined ( __ICCARM__ )
+    #pragma data_alignment=4
   #endif
-#endif /* USB_OTG_HS_INTERNAL_DMA_ENABLED */ 
-/* USB HID device Configuration Descriptor */
-__ALIGN_BEGIN static uint8_t USBD_MSC_HID_CfgDesc[USB_MSC_HID_CONFIG_DESC_SIZ] __ALIGN_END =
+#endif /* USB_OTG_HS_INTERNAL_DMA_ENABLED */
+
+/*
+ * Configuration descriptor layout (62 bytes total):
+ *
+ *  [0]  9  – Configuration descriptor
+ *  [9]  9  – Interface 0: MTP (Vendor Specific, 3 endpoints)
+ * [18]  7  – Endpoint: MTP Bulk IN  (0x81)
+ * [25]  7  – Endpoint: MTP Bulk OUT (0x01)
+ * [32]  7  – Endpoint: MTP Interrupt IN (0x83, event notifications)
+ * [39]  9  – Interface 1: MSC (Bulk-Only Transport, 2 endpoints)
+ * [48]  7  – Endpoint: MSC Bulk IN  (0x82)
+ * [55]  7  – Endpoint: MSC Bulk OUT (0x02)
+ */
+__ALIGN_BEGIN static uint8_t USBD_MSC_HID_CfgDesc[USB_MSC_MTP_CONFIG_DESC_SIZ] __ALIGN_END =
 {
-  0x09, /* bLength: Configuration Descriptor size */
-  USB_CONFIGURATION_DESCRIPTOR_TYPE, /* bDescriptorType: Configuration */
-  USB_MSC_HID_CONFIG_DESC_SIZ,
-  /* wTotalLength: Bytes returned */
-  0x00,
-  0x02,         /*bNumInterfaces: 2 interface*/
-  0x01,         /*bConfigurationValue: Configuration value*/
-  0x00,         /*iConfiguration: Index of string descriptor describing
-  the configuration*/
-  0xE0,         /*bmAttributes: bus powered and Support Remote Wake-up */
-  0x32,         /*MaxPower 100 mA: this current is used for detecting Vbus*/
-  
-  /************** Descriptor of Joystick Mouse interface ****************/
-  /* 09 */
-  0x09,         /*bLength: Interface Descriptor size*/
-  USB_INTERFACE_DESCRIPTOR_TYPE,/*bDescriptorType: Interface descriptor type*/
-  HID_INTERFACE,         /*bInterfaceNumber: Number of Interface*/
-  0x00,         /*bAlternateSetting: Alternate setting*/
-  0x01,         /*bNumEndpoints*/
-  0x03,         /*bInterfaceClass: HID*/
-  0x01,         /*bInterfaceSubClass : 1=BOOT, 0=no boot*/
-  0x02,         /*nInterfaceProtocol : 0=none, 1=keyboard, 2=mouse*/
-  0,            /*iInterface: Index of string descriptor*/
-  /******************** Descriptor of Joystick Mouse HID ********************/
-  /* 18 */
-  0x09,         /*bLength: HID Descriptor size*/
-  HID_DESCRIPTOR_TYPE, /*bDescriptorType: HID*/
-  0x11,         /*bcdHID: HID Class Spec release number*/
-  0x01,
-  0x00,         /*bCountryCode: Hardware target country*/
-  0x01,         /*bNumDescriptors: Number of HID class descriptors to follow*/
-  0x22,         /*bDescriptorType*/
-  HID_MOUSE_REPORT_DESC_SIZE,/*wItemLength: Total length of Report descriptor*/
-  0x00,
-  /******************** Descriptor of Mouse endpoint ********************/
-  /* 27 */
-  0x07,          /*bLength: Endpoint Descriptor size*/
-  USB_ENDPOINT_DESCRIPTOR_TYPE, /*bDescriptorType:*/
-  
-  HID_IN_EP,     /*bEndpointAddress: Endpoint Address (IN)*/
-  0x03,          /*bmAttributes: Interrupt endpoint*/
-  HID_IN_PACKET, /*wMaxPacketSize: 4 Byte max */
-  0x00,
-  0x0A,          /*bInterval: Polling Interval (10 ms)*/
-  /* 34 */
-  
-  /********************  Mass Storage interface ********************/
-  0x09,   /* bLength: Interface Descriptor size */
-  0x04,   /* bDescriptorType: */
-  MSC_INTERFACE,   /* bInterfaceNumber: Number of Interface */
-  0x00,   /* bAlternateSetting: Alternate setting */
-  0x02,   /* bNumEndpoints*/
-  0x08,   /* bInterfaceClass: MSC Class */
-  0x06,   /* bInterfaceSubClass : SCSI transparent*/
-  0x50,   /* nInterfaceProtocol */
-  0x05,          /* iInterface: */
-  /********************  Mass Storage Endpoints ********************/
-  0x07,   /*Endpoint descriptor length = 7*/
-  0x05,   /*Endpoint descriptor type */
-  MSC_IN_EP,   /*Endpoint address (IN, address 1) */
-  0x02,   /*Bulk endpoint type */
-  LOBYTE(MSC_MAX_PACKET),
-  HIBYTE(MSC_MAX_PACKET),
-  0x00,   /*Polling interval in milliseconds */
-  
-  0x07,   /*Endpoint descriptor length = 7 */
-  0x05,   /*Endpoint descriptor type */
-  MSC_OUT_EP,   /*Endpoint address (OUT, address 1) */
-  0x02,   /*Bulk endpoint type */
-  LOBYTE(MSC_MAX_PACKET),
-  HIBYTE(MSC_MAX_PACKET),
-  0x00     /*Polling interval in milliseconds*/
-} ;
+    /* ---------- Configuration Descriptor ---------- */
+    0x09,                            /* bLength */
+    USB_CONFIGURATION_DESCRIPTOR_TYPE, /* bDescriptorType */
+    LOBYTE(USB_MSC_MTP_CONFIG_DESC_SIZ), /* wTotalLength lo */
+    HIBYTE(USB_MSC_MTP_CONFIG_DESC_SIZ), /* wTotalLength hi */
+    0x02,                            /* bNumInterfaces */
+    0x01,                            /* bConfigurationValue */
+    0x00,                            /* iConfiguration */
+    0xC0,                            /* bmAttributes: bus powered */
+    0x32,                            /* MaxPower 100 mA */
 
-/* Private function prototypes -----------------------------------------------*/
+    /* ---------- Interface 0: MTP (Vendor Specific) ----------
+     * Windows identifies this as MTP via the Microsoft OS Descriptor
+     * Extended Compat ID (CompatibleID = "MTP") returned in response
+     * to the vendor-class request with bRequest=0x01, wIndex=0x0004.
+     */
+    0x09,                            /* bLength */
+    USB_INTERFACE_DESCRIPTOR_TYPE,   /* bDescriptorType */
+    MTP_INTERFACE,                   /* bInterfaceNumber (0) */
+    0x00,                            /* bAlternateSetting */
+    0x03,                            /* bNumEndpoints */
+    0xFF,                            /* bInterfaceClass: Vendor Specific */
+    0xFF,                            /* bInterfaceSubClass */
+    0x00,                            /* bInterfaceProtocol */
+    0x00,                            /* iInterface */
 
-/*********************************************
-   MSC Device library callbacks
-*********************************************/
-extern uint8_t  USBD_MSC_Init (void  *pdev, uint8_t cfgidx);
-extern uint8_t  USBD_MSC_DeInit (void  *pdev, uint8_t cfgidx);
-extern uint8_t  USBD_MSC_Setup (void  *pdev, USB_SETUP_REQ *req);
-extern uint8_t  USBD_MSC_DataIn (void  *pdev, uint8_t epnum);
-extern uint8_t  USBD_MSC_DataOut (void  *pdev,  uint8_t epnum);
-extern uint8_t  *USBD_MSC_GetCfgDesc (uint8_t speed, uint16_t *length);
-extern uint8_t  USBD_MSC_CfgDesc[USB_MSC_CONFIG_DESC_SIZ];
+    /* MTP Bulk IN endpoint */
+    0x07,                            /* bLength */
+    USB_ENDPOINT_DESCRIPTOR_TYPE,    /* bDescriptorType */
+    MTP_IN_EP,                       /* bEndpointAddress: 0x81 IN */
+    0x02,                            /* bmAttributes: Bulk */
+    LOBYTE(MTP_MAX_PACKET),          /* wMaxPacketSize lo */
+    HIBYTE(MTP_MAX_PACKET),          /* wMaxPacketSize hi */
+    0x00,                            /* bInterval */
 
-/*********************************************
-   HID Device library callbacks
-*********************************************/
-extern uint8_t  USBD_HID_Init (void  *pdev, uint8_t cfgidx);
-extern uint8_t  USBD_HID_DeInit (void  *pdev, uint8_t cfgidx);
-extern uint8_t  USBD_HID_Setup (void  *pdev, USB_SETUP_REQ *req);
-extern uint8_t  *USBD_HID_GetCfgDesc (uint8_t speed, uint16_t *length);
-extern uint8_t  USBD_HID_DataIn (void  *pdev, uint8_t epnum);
-extern uint8_t  USBD_HID_DataOut (void  *pdev, uint8_t epnum);
+    /* MTP Bulk OUT endpoint */
+    0x07,                            /* bLength */
+    USB_ENDPOINT_DESCRIPTOR_TYPE,    /* bDescriptorType */
+    MTP_OUT_EP,                      /* bEndpointAddress: 0x01 OUT */
+    0x02,                            /* bmAttributes: Bulk */
+    LOBYTE(MTP_MAX_PACKET),          /* wMaxPacketSize lo */
+    HIBYTE(MTP_MAX_PACKET),          /* wMaxPacketSize hi */
+    0x00,                            /* bInterval */
+
+    /* MTP Interrupt IN endpoint (event notifications) */
+    0x07,                            /* bLength */
+    USB_ENDPOINT_DESCRIPTOR_TYPE,    /* bDescriptorType */
+    MTP_CMD_EP,                      /* bEndpointAddress: 0x83 IN */
+    0x03,                            /* bmAttributes: Interrupt */
+    LOBYTE(MTP_CMD_PACKET_SIZE),     /* wMaxPacketSize lo */
+    HIBYTE(MTP_CMD_PACKET_SIZE),     /* wMaxPacketSize hi */
+    0x0A,                            /* bInterval: 10 ms */
+
+    /* ---------- Interface 1: MSC (Bulk-Only Transport) ---------- */
+    0x09,                            /* bLength */
+    USB_INTERFACE_DESCRIPTOR_TYPE,   /* bDescriptorType */
+    MSC_INTERFACE,                   /* bInterfaceNumber (1) */
+    0x00,                            /* bAlternateSetting */
+    0x02,                            /* bNumEndpoints */
+    0x08,                            /* bInterfaceClass: Mass Storage */
+    0x06,                            /* bInterfaceSubClass: SCSI Transparent */
+    0x50,                            /* bInterfaceProtocol: Bulk-Only */
+    0x05,                            /* iInterface */
+
+    /* MSC Bulk IN endpoint */
+    0x07,                            /* bLength */
+    USB_ENDPOINT_DESCRIPTOR_TYPE,    /* bDescriptorType */
+    MSC_IN_EP,                       /* bEndpointAddress: 0x82 IN */
+    0x02,                            /* bmAttributes: Bulk */
+    LOBYTE(MSC_MAX_PACKET),          /* wMaxPacketSize lo */
+    HIBYTE(MSC_MAX_PACKET),          /* wMaxPacketSize hi */
+    0x00,                            /* bInterval */
+
+    /* MSC Bulk OUT endpoint */
+    0x07,                            /* bLength */
+    USB_ENDPOINT_DESCRIPTOR_TYPE,    /* bDescriptorType */
+    MSC_OUT_EP,                      /* bEndpointAddress: 0x02 OUT */
+    0x02,                            /* bmAttributes: Bulk */
+    LOBYTE(MSC_MAX_PACKET),          /* wMaxPacketSize lo */
+    HIBYTE(MSC_MAX_PACKET),          /* wMaxPacketSize hi */
+    0x00,                            /* bInterval */
+};
 
 /**
   * @}
-  */ 
+  */
 
-/** @defgroup USBD_MSC_HID_Private_Functions
+/*---  MSC callbacks (external)  ---*/
+extern uint8_t  USBD_MSC_Init    (void *pdev, uint8_t cfgidx);
+extern uint8_t  USBD_MSC_DeInit  (void *pdev, uint8_t cfgidx);
+extern uint8_t  USBD_MSC_Setup   (void *pdev, USB_SETUP_REQ *req);
+extern uint8_t  USBD_MSC_DataIn  (void *pdev, uint8_t epnum);
+extern uint8_t  USBD_MSC_DataOut (void *pdev, uint8_t epnum);
+
+/** @defgroup USBD_MSC_MTP_Private_Functions
   * @{
-  */ 
+  */
 
 /**
   * @brief  USBD_MSC_HID_Init
-  *         Initialize the MSC-HID interface
-  * @param  pdev: device instance
-  * @param  cfgidx: Configuration index
-  * @retval status
+  *         Open all endpoints and initialise the MSC class.
+  *         The MTP endpoints are opened here; MTP protocol handling
+  *         is performed by the host (Windows WUDFWpdMtp driver).
   */
-static uint8_t  USBD_MSC_HID_Init (void  *pdev, 
-                                   uint8_t cfgidx)
+static uint8_t USBD_MSC_HID_Init(void *pdev, uint8_t cfgidx)
 {
-  /* HID initialization */
-  USBD_HID_Init (pdev,cfgidx);
-  
-  /* MSC initialization */
-  USBD_MSC_Init (pdev,cfgidx);
-  
-  return USBD_OK;
+    /* Open MTP bulk IN */
+    DCD_EP_Open(pdev, MTP_IN_EP,  MTP_MAX_PACKET,       EP_TYPE_BULK);
+    /* Open MTP bulk OUT */
+    DCD_EP_Open(pdev, MTP_OUT_EP, MTP_MAX_PACKET,       EP_TYPE_BULK);
+    /* Open MTP interrupt IN (event channel) */
+    DCD_EP_Open(pdev, MTP_CMD_EP, MTP_CMD_PACKET_SIZE,  EP_TYPE_INTR);
+
+    /* Initialise MSC */
+    USBD_MSC_Init(pdev, cfgidx);
+
+    return USBD_OK;
 }
 
 /**
   * @brief  USBD_MSC_HID_DeInit
-  *         DeInitialize the MSC_HID layer
-  * @param  pdev: device instance
-  * @param  cfgidx: Configuration index
-  * @retval status
+  *         Close all endpoints.
   */
-static uint8_t  USBD_MSC_HID_DeInit (void  *pdev, 
-                                     uint8_t cfgidx)
+static uint8_t USBD_MSC_HID_DeInit(void *pdev, uint8_t cfgidx)
 {
-  /* HID De-initialization */
-  USBD_HID_DeInit (pdev,cfgidx);
-  
-  /* MSC De-initialization */
-  USBD_MSC_DeInit (pdev,cfgidx);
-  
-  return USBD_OK;
+    DCD_EP_Close(pdev, MTP_IN_EP);
+    DCD_EP_Close(pdev, MTP_OUT_EP);
+    DCD_EP_Close(pdev, MTP_CMD_EP);
+
+    USBD_MSC_DeInit(pdev, cfgidx);
+
+    return USBD_OK;
 }
 
 /**
   * @brief  USBD_MSC_HID_Setup
-  *         Handle the MSC_HID specific requests
-  * @param  pdev: instance
-  * @param  req: usb requests
-  * @retval status
+  *         Route class-specific setup requests to the correct handler.
   */
-static uint8_t  USBD_MSC_HID_Setup (void  *pdev, 
-                                    USB_SETUP_REQ *req)
+static uint8_t USBD_MSC_HID_Setup(void *pdev, USB_SETUP_REQ *req)
 {
-  switch (req->bmRequest & USB_REQ_RECIPIENT_MASK)
-  {
-  case USB_REQ_RECIPIENT_INTERFACE:
-    if (req->wIndex == HID_INTERFACE)
+    switch (req->bmRequest & USB_REQ_RECIPIENT_MASK)
     {
-      return (USBD_HID_Setup (pdev, req));
+    case USB_REQ_RECIPIENT_INTERFACE:
+        if (req->wIndex == MTP_INTERFACE)
+        {
+            /* MTP has no mandatory class-specific control requests;
+             * stall anything unexpected. */
+            USBD_CtlError(pdev, req);
+        }
+        else
+        {
+            return USBD_MSC_Setup(pdev, req);
+        }
+        break;
+
+    case USB_REQ_RECIPIENT_ENDPOINT:
+        if (req->wIndex == MSC_IN_EP || req->wIndex == MSC_OUT_EP)
+        {
+            return USBD_MSC_Setup(pdev, req);
+        }
+        break;
+
+    default:
+        break;
     }
-    else
-    {
-      return (USBD_MSC_Setup(pdev, req));
-    }
-    
-  case USB_REQ_RECIPIENT_ENDPOINT:
-    if (req->wIndex == HID_IN_EP)
-    {
-      return (USBD_HID_Setup (pdev, req));   
-    }
-    else
-    {
-      return (USBD_MSC_Setup(pdev, req));
-    }
-  }   
-  return USBD_OK;
+    return USBD_OK;
 }
 
 /**
-  * @brief  USBD_MSC_HID_GetCfgDesc 
-  *         return configuration descriptor
-  * @param  speed : current device speed
-  * @param  length : pointer data length
-  * @retval pointer to descriptor buffer
+  * @brief  USBD_MSC_HID_GetCfgDesc
   */
-static uint8_t  *USBD_MSC_HID_GetCfgDesc (uint8_t speed, uint16_t *length)
+static uint8_t *USBD_MSC_HID_GetCfgDesc(uint8_t speed, uint16_t *length)
 {
-  *length = sizeof (USBD_MSC_HID_CfgDesc);
-  return USBD_MSC_HID_CfgDesc;
+    *length = sizeof(USBD_MSC_HID_CfgDesc);
+    return USBD_MSC_HID_CfgDesc;
 }
 
 /**
   * @brief  USBD_MSC_HID_DataIn
-  *         handle data IN Stage
-  * @param  pdev: device instance
-  * @param  epnum: endpoint index
-  * @retval status
+  *         Route IN data to the correct handler.
   */
-static uint8_t  USBD_MSC_HID_DataIn (void  *pdev, 
-                              uint8_t epnum)
+static uint8_t USBD_MSC_HID_DataIn(void *pdev, uint8_t epnum)
 {
-  /*DataIN can be for MSC or HID */
-  
-  if (epnum == (MSC_IN_EP&~0x80) )
-  {
-    return (USBD_MSC_DataIn(pdev, epnum));
-  }
-  else
-  {
-  return (USBD_HID_DataIn(pdev, epnum));
-  }
+    if (epnum == (MSC_IN_EP & ~0x80U))
+    {
+        return USBD_MSC_DataIn(pdev, epnum);
+    }
+    /* MTP IN data: nothing to do in this stub implementation */
+    return USBD_OK;
 }
 
 /**
   * @brief  USBD_MSC_HID_DataOut
-  *         handle data OUT Stage
-  * @param  pdev: device instance
-  * @param  epnum: endpoint index
-  * @retval status
+  *         Route OUT data to the correct handler.
   */
-static uint8_t  USBD_MSC_HID_DataOut(void *pdev , uint8_t epnum)
+static uint8_t USBD_MSC_HID_DataOut(void *pdev, uint8_t epnum)
 {
-  /*DataOut can be for MSC*/
-  return (USBD_MSC_DataOut(pdev, epnum));
+    if (epnum == (MSC_OUT_EP & ~0x80U))
+    {
+        return USBD_MSC_DataOut(pdev, epnum);
+    }
+    /* MTP OUT data: nothing to do in this stub implementation */
+    return USBD_OK;
 }
 
 /**
   * @}
-  */ 
+  */
 
 
 /**
   * @}
-  */ 
+  */
 
 
 /**
   * @}
-  */ 
+  */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

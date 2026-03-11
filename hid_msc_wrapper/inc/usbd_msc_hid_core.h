@@ -34,13 +34,17 @@
   * @brief This file is the Header file for USBD_msc.c
   * @{
   */ 
-#define HID_INTERFACE 0x0
+#define MTP_INTERFACE 0x0
 #define MSC_INTERFACE 0x1
 
 /** @defgroup USBD_HID_Exported_Defines
   * @{
-  */ 
-#define USB_MSC_HID_CONFIG_DESC_SIZ  (USB_HID_CONFIG_DESC_SIZ -9 + USB_MSC_CONFIG_DESC_SIZ)
+  */
+/* Config descriptor: 9(cfg) + 9(MTP iface) + 7(Bulk IN) + 7(Bulk OUT) + 7(Intr IN)
+ *                  + 9(MSC iface) + 7(Bulk IN) + 7(Bulk OUT) = 62 bytes */
+#define USB_MSC_MTP_CONFIG_DESC_SIZ  62
+/* Keep old name as alias so existing references still compile */
+#define USB_MSC_HID_CONFIG_DESC_SIZ  USB_MSC_MTP_CONFIG_DESC_SIZ
 /**
   * @}
   */ 

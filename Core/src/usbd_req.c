@@ -63,6 +63,51 @@
 /** @defgroup USBD_REQ_Private_Variables
   * @{
   */
+
+/*
+ * Microsoft OS String Descriptor (string index 0xEE).
+ *
+ * Format: bLength(1) + bDescriptorType(1) + qwSignature "MSFT100" Unicode(14)
+ *       + bMS_VendorCode(1) + bPad(1)  = 18 bytes
+ *
+ * bMS_VendorCode = 0x01: the bRequest value Windows will use in the
+ * follow-up vendor-class control request to retrieve the Extended
+ * Compat ID Feature Descriptor.
+ */
+static const uint8_t USBD_MS_OS_StringDesc[18] =
+{
+    0x12,                        /* bLength */
+    USB_DESC_TYPE_STRING,        /* bDescriptorType */
+    'M', 0x00, 'S', 0x00, 'F', 0x00, 'T', 0x00,
+    '1', 0x00, '0', 0x00, '0', 0x00,  /* qwSignature "MSFT100" */
+    0x01,                        /* bMS_VendorCode */
+    0x00,                        /* bPad */
+};
+
+/*
+ * Extended Compat ID Feature Descriptor.
+ *
+ * This tells Windows to load the WUDFWpdMtp driver for interface 0.
+ * CompatibleID = "MTP" causes Windows to match wpdmtp.inf / WUDFWpdMtp.
+ *
+ * Total length = 16 (header) + 24 (one function record) = 40 = 0x28 bytes.
+ */
+static const uint8_t USBD_MS_ExtCompatIDDesc[40] =
+{
+    /* Header */
+    0x28, 0x00, 0x00, 0x00,      /* dwLength = 40 */
+    0x00, 0x01,                  /* bcdVersion = 1.0 */
+    0x04, 0x00,                  /* wIndex = 0x0004 (Extended Compat ID) */
+    0x01,                        /* bCount = 1 function */
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* Reserved[7] */
+    /* Function record 0 */
+    0x00,                        /* bFirstInterfaceNumber = 0 (MTP interface) */
+    0x01,                        /* bReserved = 0x01 */
+    'M', 'T', 'P', 0, 0, 0, 0, 0, /* CompatibleID "MTP\0\0\0\0\0" */
+    0, 0, 0, 0, 0, 0, 0, 0,      /* SubCompatibleID[8] */
+    0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* Reserved[6] */
+};
+
 extern __IO USB_OTG_DCTL_TypeDef SET_TEST_MODE;
 
 #ifdef USB_OTG_HS_INTERNAL_DMA_ENABLED
@@ -136,6 +181,23 @@ static uint8_t USBD_GetLen(uint8_t *buf);
 USBD_Status  USBD_StdDevReq (USB_OTG_CORE_HANDLE  *pdev, USB_SETUP_REQ  *req)
 {
   USBD_Status ret = USBD_OK;
+
+  /* Handle Microsoft OS Descriptor vendor-class requests before standard ones.
+   * Windows sends bmRequestType=0xC0, bRequest=bMS_VendorCode(0x01),
+   * wIndex=0x0004 to retrieve the Extended Compat ID Feature Descriptor. */
+  if ((req->bmRequest & USB_REQ_TYPE_MASK) == USB_REQ_TYPE_VENDOR)
+  {
+    if ((req->bRequest == 0x01) && (req->wIndex == 0x0004))
+    {
+      uint16_t len = MIN((uint16_t)sizeof(USBD_MS_ExtCompatIDDesc), req->wLength);
+      USBD_CtlSendData(pdev, (uint8_t *)USBD_MS_ExtCompatIDDesc, len);
+    }
+    else
+    {
+      USBD_CtlError(pdev, req);
+    }
+    return ret;
+  }
 
   switch (req->bRequest)
   {
@@ -419,6 +481,11 @@ static void USBD_GetDescriptor(USB_OTG_CORE_HANDLE  *pdev,
 
     case USBD_IDX_INTERFACE_STR:
       pbuf = pdev->dev.usr_device->GetInterfaceStrDescriptor(pdev->cfg.speed, &len);
+      break;
+
+    case 0xEE: /* Microsoft OS String Descriptor */
+      pbuf = (uint8_t *)USBD_MS_OS_StringDesc;
+      len  = sizeof(USBD_MS_OS_StringDesc);
       break;
 
     default:

@@ -58,7 +58,7 @@
 #define         DEVICE_ID3          (0x1FFFF7EC)  
 #endif
 
-#define  USB_SIZ_STRING_SERIAL       0x1A
+#define  USB_SIZ_STRING_SERIAL       0x20  /* 2 + 15*2 for "10AECS0322003GZ" */
 
 /**
   * @}
