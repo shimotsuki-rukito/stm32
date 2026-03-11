@@ -53,6 +53,10 @@
 #define MTP_MAX_PACKET               64
 #define MTP_CMD_PACKET_SIZE          28
 
+/* Legacy HID defines – kept so usbd_hid_core.c in the STM32 library compiles */
+#define HID_IN_EP                    0x81
+#define HID_IN_PACKET                4
+
 #ifdef USE_USB_OTG_HS  
 #ifdef USE_ULPI_PHY
 #define MSC_MAX_PACKET               512
