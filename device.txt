@@ -1,0 +1,258 @@
+==================================================
+Device Name       : 0013.0000.0000.009.000.000.000.000.000
+Description       : iQOO 13
+Device Type       : Unknown
+Connected         : No
+Safe To Unplug    : Yes
+Disabled          : No
+USB Hub           : No
+Drive Letter      : 
+Serial Number     : 
+Registry Time 1   : 2026/3/11 17:38:35
+Registry Time 2   : 2026/3/11 17:38:35
+VendorID          : 2d95
+ProductID         : 6012
+Firmware Revision : 6.06
+USB Class         : 00
+USB SubClass      : 00
+USB Protocol      : 00
+Hub / Port        : 
+Computer Name     : DESKTOP-UE9K6OB
+Vendor Name       : 
+Product Name      : 
+ParentId Prefix   : 
+Service Name      : WUDFWpdMtp
+Service Description: 
+Driver Filename   : WUDFRd.sys
+Device Class      : 
+Device Mfg        : vivo
+Friendly Name     : iQOO 13
+Power             : 100 mA
+USB Version       : 2.00
+Driver Description: iQOO 13
+Driver Version    : 10.0.26100.3624
+Driver InfSection : MTP
+Driver InfPath    : wpdmtp.inf
+Instance ID       : USB\VID_2D95&PID_6012&MI_00\9&aad45c5&0&0000
+Capabilities      : SurpriseRemovalOK
+Install Time      : 
+First Install Time: 
+Connect Time      : 
+Disconnect Time   : 
+==================================================
+
+==================================================
+Device Name       : 0013.0000.0000.009.000.000.000.000.000
+Description       : USB Mass Storage Device
+Device Type       : Mass Storage
+Connected         : No
+Safe To Unplug    : Yes
+Disabled          : No
+USB Hub           : No
+Drive Letter      : 
+Serial Number     : 
+Registry Time 1   : 2026/3/11 17:38:35
+Registry Time 2   : 2026/3/11 17:38:35
+VendorID          : 2d95
+ProductID         : 6012
+Firmware Revision : 6.06
+USB Class         : 08
+USB SubClass      : 06
+USB Protocol      : 50
+Hub / Port        : 
+Computer Name     : DESKTOP-UE9K6OB
+Vendor Name       : 
+Product Name      : 
+ParentId Prefix   : a&28c39ef&0
+Service Name      : USBSTOR
+Service Description: @usbstor.inf,%USBSTOR.SvcDesc%;USB Mass Storage Driver
+Driver Filename   : USBSTOR.SYS
+Device Class      : 
+Device Mfg        : Compatible USB storage device
+Friendly Name     : 
+Power             : 100 mA
+USB Version       : 2.00
+Driver Description: USB Mass Storage Device
+Driver Version    : 10.0.26100.3624
+Driver InfSection : USBSTOR_BULK.NT
+Driver InfPath    : usbstor.inf
+Instance ID       : USB\VID_2D95&PID_6012&MI_01\9&aad45c5&0&0001
+Capabilities      : SurpriseRemovalOK
+Install Time      : 
+First Install Time: 
+Connect Time      : 
+Disconnect Time   : 
+==================================================
+
+==================================================
+Device Name       : Port_#0009.Hub_#0004
+Description       : USB Composite Device
+Device Type       : Unknown
+Connected         : No
+Safe To Unplug    : Yes
+Disabled          : No
+USB Hub           : No
+Drive Letter      : 
+Serial Number     : 10AECS0322003GZ
+Registry Time 1   : 2026/3/11 17:38:35
+Registry Time 2   : 2026/3/11 17:38:31
+VendorID          : 2d95
+ProductID         : 6012
+Firmware Revision : 6.06
+USB Class         : 00
+USB SubClass      : 00
+USB Protocol      : 00
+Hub / Port        : 
+Computer Name     : DESKTOP-UE9K6OB
+Vendor Name       : 
+Product Name      : 
+ParentId Prefix   : 9&aad45c5&0
+Service Name      : usbccgp
+Service Description: @usb.inf,%GenericParent.SvcDesc%;Microsoft USB 通用父驱动程序
+Driver Filename   : usbccgp.sys
+Device Class      : 
+Device Mfg        : (标准 USB 主控制器)
+Friendly Name     : 
+Power             : 100 mA
+USB Version       : 2.00
+Driver Description: USB Composite Device
+Driver Version    : 10.0.26100.3912
+Driver InfSection : Composite.Dev.NT
+Driver InfPath    : usb.inf
+Instance ID       : USB\VID_2D95&PID_6012\10AECS0322003GZ
+Capabilities      : Removable, UniqueID, SurpriseRemovalOK
+Install Time      : 
+First Install Time: 
+Connect Time      : 
+Disconnect Time   : 
+==================================================
+
+==================================================
+Device Name       : iQOO 13
+Description       : USB Mass Storage Device
+Device Type       : Mass Storage
+Connected         : Yes
+Safe To Unplug    : Yes
+Disabled          : No
+USB Hub           : No
+Drive Letter      : F:
+Serial Number     : 
+Registry Time 1   : 2026/3/11 17:41:15
+Registry Time 2   : 2026/3/11 17:41:15
+VendorID          : 2d95
+ProductID         : 6012
+Firmware Revision : 2.00
+USB Class         : 08
+USB SubClass      : 06
+USB Protocol      : 50
+Hub / Port        : 
+Computer Name     : DESKTOP-UE9K6OB
+Vendor Name       : 
+Product Name      : 
+ParentId Prefix   : a&19a8d18b&0
+Service Name      : USBSTOR
+Service Description: @usbstor.inf,%USBSTOR.SvcDesc%;USB Mass Storage Driver
+Driver Filename   : USBSTOR.SYS
+Device Class      : 
+Device Mfg        : Compatible USB storage device
+Friendly Name     : 
+Power             : 100 mA
+USB Version       : 2.00
+Driver Description: USB Mass Storage Device
+Driver Version    : 10.0.26100.3624
+Driver InfSection : USBSTOR_BULK.NT
+Driver InfPath    : usbstor.inf
+Instance ID       : USB\VID_2D95&PID_6012&MI_01\9&c0d0cb8&0&0001
+Capabilities      : SurpriseRemovalOK
+Install Time      : 
+First Install Time: 
+Connect Time      : 
+Disconnect Time   : 
+==================================================
+
+==================================================
+Device Name       : iQOO 13
+Description       : USB Input Device
+Device Type       : HID (Human Interface Device)
+Connected         : Yes
+Safe To Unplug    : Yes
+Disabled          : No
+USB Hub           : No
+Drive Letter      : 
+Serial Number     : 
+Registry Time 1   : 2026/3/11 17:41:15
+Registry Time 2   : 2026/3/11 17:41:15
+VendorID          : 2d95
+ProductID         : 6012
+Firmware Revision : 2.00
+USB Class         : 03
+USB SubClass      : 01
+USB Protocol      : 02
+Hub / Port        : 
+Computer Name     : DESKTOP-UE9K6OB
+Vendor Name       : 
+Product Name      : 
+ParentId Prefix   : a&678b54d&0
+Service Name      : HidUsb
+Service Description: @input.inf,%HID.SvcDesc%;Microsoft HID Class Driver
+Driver Filename   : hidusb.sys
+Device Class      : 
+Device Mfg        : (Standard system devices)
+Friendly Name     : 
+Power             : 100 mA
+USB Version       : 2.00
+Driver Description: USB Input Device
+Driver Version    : 10.0.26100.4202
+Driver InfSection : HID_Inst.NT
+Driver InfPath    : input.inf
+Instance ID       : USB\VID_2D95&PID_6012&MI_00\9&c0d0cb8&0&0000
+Capabilities      : SurpriseRemovalOK
+Install Time      : 
+First Install Time: 
+Connect Time      : 
+Disconnect Time   : 
+==================================================
+
+==================================================
+Device Name       : iQOO 13
+Description       : USB Composite Device
+Device Type       : Unknown
+Connected         : Yes
+Safe To Unplug    : Yes
+Disabled          : No
+USB Hub           : No
+Drive Letter      : 
+Serial Number     : 
+Registry Time 1   : 2026/3/11 17:41:15
+Registry Time 2   : 2026/3/11 17:30:03
+VendorID          : 2d95
+ProductID         : 6012
+Firmware Revision : 2.00
+USB Class         : 00
+USB SubClass      : 00
+USB Protocol      : 00
+Hub / Port        : 
+Computer Name     : DESKTOP-UE9K6OB
+Vendor Name       : 
+Product Name      : 
+ParentId Prefix   : 9&c0d0cb8&0
+Service Name      : usbccgp
+Service Description: @usb.inf,%GenericParent.SvcDesc%;Microsoft USB 通用父驱动程序
+Driver Filename   : usbccgp.sys
+Device Class      : 
+Device Mfg        : (标准 USB 主控制器)
+Friendly Name     : 
+Power             : 100 mA
+USB Version       : 2.00
+Driver Description: USB Composite Device
+Driver Version    : 10.0.26100.3912
+Driver InfSection : Composite.Dev.NT
+Driver InfPath    : usb.inf
+Instance ID       : USB\VID_2D95&PID_6012\8&18264d93&0&11
+Capabilities      : Removable, SurpriseRemovalOK
+Install Time      : 
+First Install Time: 
+Connect Time      : 
+Disconnect Time   : 
+==================================================
+
