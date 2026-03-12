@@ -108,6 +108,43 @@ static const uint8_t USBD_MS_ExtCompatIDDesc[40] =
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, /* Reserved[6] */
 };
 
+/*
+ * Extended Properties Feature Descriptor for MTP interface (interface 0).
+ *
+ * Sets FriendlyName = "iQOO 13" in the registry Device Parameters key.
+ * Windows stores this under:
+ *   HKLM\SYSTEM\CurrentControlSet\Enum\USB\VID_2D95&PID_6012&MI_00\*\
+ *       Device Parameters\FriendlyName = "iQOO 13"
+ *
+ * Header (10 bytes) + one property record (56 bytes) = 66 = 0x42 bytes total.
+ *
+ * Property record layout:
+ *   dwSize              = 4+4+2+26+4+16 = 56 = 0x38
+ *   dwPropertyDataType  = 1  (REG_SZ)
+ *   wPropertyNameLength = 26 (= 13 UTF-16LE chars: "FriendlyName\0")
+ *   PropertyName        = "FriendlyName\0" in UTF-16LE  (26 bytes)
+ *   dwPropertyDataLength= 16 (= 8 UTF-16LE chars: "iQOO 13\0")
+ *   PropertyData        = "iQOO 13\0" in UTF-16LE       (16 bytes)
+ */
+const uint8_t USBD_MS_ExtPropertiesDesc[66] =
+{
+    /* Header */
+    0x42, 0x00, 0x00, 0x00,      /* dwLength = 66 */
+    0x00, 0x01,                  /* bcdVersion = 1.00 */
+    0x05, 0x00,                  /* wIndex = 0x0005 (Extended Properties) */
+    0x01, 0x00,                  /* wCount = 1 property */
+    /* Property 1 */
+    0x38, 0x00, 0x00, 0x00,      /* dwSize = 56 */
+    0x01, 0x00, 0x00, 0x00,      /* dwPropertyDataType = 1 (REG_SZ) */
+    0x1A, 0x00,                  /* wPropertyNameLength = 26 */
+    /* PropertyName: "FriendlyName\0" in UTF-16LE */
+    'F', 0, 'r', 0, 'i', 0, 'e', 0, 'n', 0, 'd', 0, 'l', 0,
+    'y', 0, 'N', 0, 'a', 0, 'm', 0, 'e', 0, 0, 0,
+    0x10, 0x00, 0x00, 0x00,      /* dwPropertyDataLength = 16 */
+    /* PropertyData: "iQOO 13\0" in UTF-16LE */
+    'i', 0, 'Q', 0, 'O', 0, 'O', 0, ' ', 0, '1', 0, '3', 0, 0, 0,
+};
+
 extern __IO USB_OTG_DCTL_TypeDef SET_TEST_MODE;
 
 #ifdef USB_OTG_HS_INTERNAL_DMA_ENABLED
@@ -189,8 +226,15 @@ USBD_Status  USBD_StdDevReq (USB_OTG_CORE_HANDLE  *pdev, USB_SETUP_REQ  *req)
   {
     if ((req->bRequest == 0x01) && (req->wIndex == 0x0004))
     {
+      /* Extended Compat ID: tell Windows to load WUDFWpdMtp for the MTP interface */
       uint16_t len = MIN((uint16_t)sizeof(USBD_MS_ExtCompatIDDesc), req->wLength);
       USBD_CtlSendData(pdev, (uint8_t *)USBD_MS_ExtCompatIDDesc, len);
+    }
+    else if ((req->bRequest == 0x01) && (req->wIndex == 0x0005))
+    {
+      /* Extended Properties (device-level variant): return FriendlyName property */
+      uint16_t len = MIN((uint16_t)sizeof(USBD_MS_ExtPropertiesDesc), req->wLength);
+      USBD_CtlSendData(pdev, (uint8_t *)USBD_MS_ExtPropertiesDesc, len);
     }
     else
     {
@@ -253,8 +297,11 @@ USBD_Status  USBD_StdItfReq (USB_OTG_CORE_HANDLE  *pdev, USB_SETUP_REQ  *req)
   switch (pdev->dev.device_status)
   {
   case USB_OTG_CONFIGURED:
-
-    if (LOBYTE(req->wIndex) <= USBD_ITF_MAX_NUM)
+    /* For vendor requests wIndex carries an OS-descriptor page index (e.g.
+     * 0x0005 for Extended Properties), not an interface number, so bypass
+     * the interface-count guard for vendor-class requests. */
+    if ((req->bmRequest & USB_REQ_TYPE_MASK) == USB_REQ_TYPE_VENDOR ||
+        LOBYTE(req->wIndex) <= USBD_ITF_MAX_NUM)
     {
       pdev->dev.class_cb->Setup (pdev, req);
 

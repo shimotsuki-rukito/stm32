@@ -13,6 +13,10 @@
 #include "usbd_desc.h"
 #include "usbd_req.h"
 
+/* MS OS Extended Properties descriptor defined in usbd_req.c */
+extern const uint8_t  USBD_MS_ExtPropertiesDesc[66];
+#define USBD_MS_EXT_PROPERTIES_SIZE  66U
+
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
   * @{
@@ -222,6 +226,22 @@ static uint8_t USBD_MSC_HID_DeInit(void *pdev, uint8_t cfgidx)
   */
 static uint8_t USBD_MSC_HID_Setup(void *pdev, USB_SETUP_REQ *req)
 {
+    /* MS OS Extended Properties (interface-level vendor request).
+     * Windows sends: bmRequestType=0xC1, bRequest=vendor_code(0x01),
+     *                wValue=wInterfaceNumber, wIndex=0x0005.
+     * Respond with the FriendlyName property so Windows stores
+     * "iQOO 13" as the device's friendly name in the registry. */
+    if (((req->bmRequest & USB_REQ_TYPE_MASK) == USB_REQ_TYPE_VENDOR) &&
+        (req->bRequest == 0x01) &&
+        (req->wIndex   == 0x0005) &&
+        (req->wValue   == MTP_INTERFACE))
+    {
+        uint16_t len = (req->wLength < USBD_MS_EXT_PROPERTIES_SIZE)
+                       ? req->wLength : USBD_MS_EXT_PROPERTIES_SIZE;
+        USBD_CtlSendData(pdev, (uint8_t *)USBD_MS_ExtPropertiesDesc, len);
+        return USBD_OK;
+    }
+
     switch (req->bmRequest & USB_REQ_RECIPIENT_MASK)
     {
     case USB_REQ_RECIPIENT_INTERFACE:
