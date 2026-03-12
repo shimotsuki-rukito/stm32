@@ -64,20 +64,20 @@ static const uint8_t mtp_dev_info_payload[] =
     0x00,
     /* FunctionalMode = 0 */
     0x00, 0x00,
-    /* OperationsSupported: count=4, then each opcode (UINT16 LE) */
-    0x04, 0x00,
+    /* OperationsSupported: count=4 (UINT32), then each opcode (UINT16 LE) */
+    0x04, 0x00, 0x00, 0x00,
     0x01, 0x10,  /* 0x1001 GetDeviceInfo  */
     0x02, 0x10,  /* 0x1002 OpenSession    */
     0x03, 0x10,  /* 0x1003 CloseSession   */
     0x04, 0x10,  /* 0x1004 GetStorageIDs  */
-    /* EventsSupported: count=0 */
-    0x00, 0x00,
-    /* DevicePropertiesSupported: count=0 */
-    0x00, 0x00,
-    /* CaptureFormats: count=0 */
-    0x00, 0x00,
-    /* PlaybackFormats: count=0 */
-    0x00, 0x00,
+    /* EventsSupported: count=0 (UINT32) */
+    0x00, 0x00, 0x00, 0x00,
+    /* DevicePropertiesSupported: count=0 (UINT32) */
+    0x00, 0x00, 0x00, 0x00,
+    /* CaptureFormats: count=0 (UINT32) */
+    0x00, 0x00, 0x00, 0x00,
+    /* PlaybackFormats: count=0 (UINT32) */
+    0x00, 0x00, 0x00, 0x00,
     /* Manufacturer: "vivo"  (NumChars=5 incl. NUL, UTF-16LE) */
     0x05,
     'v', 0x00, 'i', 0x00, 'v', 0x00, 'o', 0x00, 0x00, 0x00,
