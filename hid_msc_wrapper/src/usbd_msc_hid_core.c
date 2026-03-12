@@ -92,19 +92,18 @@ __ALIGN_BEGIN static uint8_t USBD_MSC_HID_CfgDesc[USB_MSC_MTP_CONFIG_DESC_SIZ] _
     0xC0,                            /* bmAttributes: bus powered */
     0x32,                            /* MaxPower 100 mA */
 
-    /* ---------- Interface 0: MTP (Vendor Specific) ----------
-     * Windows identifies this as MTP via the Microsoft OS Descriptor
-     * Extended Compat ID (CompatibleID = "MTP") returned in response
-     * to the vendor-class request with bRequest=0x01, wIndex=0x0004.
+    /* ---------- Interface 0: MTP (Still Image class) ----------
+     * bInterfaceClass=0x06/0x01/0x01 causes Windows to auto-load
+     * wpdmtp.inf (WUDFWpdMtp service), matching real iQOO 13 behaviour.
      */
     0x09,                            /* bLength */
     USB_INTERFACE_DESCRIPTOR_TYPE,   /* bDescriptorType */
     MTP_INTERFACE,                   /* bInterfaceNumber (0) */
     0x00,                            /* bAlternateSetting */
     0x03,                            /* bNumEndpoints */
-    0xFF,                            /* bInterfaceClass: Vendor Specific */
-    0xFF,                            /* bInterfaceSubClass */
-    0x00,                            /* bInterfaceProtocol */
+    0x06,                            /* bInterfaceClass: Still Image (MTP/PTP) */
+    0x01,                            /* bInterfaceSubClass */
+    0x01,                            /* bInterfaceProtocol */
     0x00,                            /* iInterface */
 
     /* MTP Bulk IN endpoint */
