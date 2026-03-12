@@ -1,0 +1,53 @@
+; iqoo13_mtp.inf
+;
+; Custom MTP driver binding for vivo iQOO 13 (VID_2D95&PID_6012).
+;
+; Installation (run as Administrator, once per machine):
+;   pnputil /add-driver iqoo13_mtp.inf /install
+; Then reconnect the STM32 device.
+;
+; After installation any device presenting VID_2D95&PID_6012 will be
+; shown as "iQOO 13" / "vivo" in Device Manager and USB viewer tools.
+
+[Version]
+Signature   = "$Windows NT$"
+Class       = WPD
+ClassGuid   = {EEC5AD98-8080-425F-922A-DABF3DE3F69A}
+Provider    = %vivomfg%
+DriverVer   = 01/13/2025,6.06.0.0
+PnpLockDown = 1
+
+[Manufacturer]
+%vivomfg% = vivo, NTamd64, NTx86, NTarm64
+
+; ---- amd64 ----
+[vivo.NTamd64]
+%iQOO13% = MTP.Install, USB\VID_2D95&PID_6012&MI_00&REV_0606
+%iQOO13% = MTP.Install, USB\VID_2D95&PID_6012&MI_00
+
+; ---- x86 ----
+[vivo.NTx86]
+%iQOO13% = MTP.Install, USB\VID_2D95&PID_6012&MI_00&REV_0606
+%iQOO13% = MTP.Install, USB\VID_2D95&PID_6012&MI_00
+
+; ---- arm64 ----
+[vivo.NTarm64]
+%iQOO13% = MTP.Install, USB\VID_2D95&PID_6012&MI_00&REV_0606
+%iQOO13% = MTP.Install, USB\VID_2D95&PID_6012&MI_00
+
+; ---- Driver install: delegate everything to wpdmtp.inf [MTP.NT] ----
+[MTP.Install]
+Include = wpdmtp.inf
+Needs   = MTP.NT
+
+[MTP.Install.Services]
+Include = wpdmtp.inf
+Needs   = MTP.NT.Services
+
+[MTP.Install.Wdf]
+Include = wpdmtp.inf
+Needs   = MTP.NT.Wdf
+
+[Strings]
+vivomfg = "vivo"
+iQOO13  = "iQOO 13"
