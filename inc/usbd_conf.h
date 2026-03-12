@@ -8,8 +8,8 @@
   ******************************************************************************
   * @attention
   *
-  * ÊµÑéÆ½Ì¨: ÒÚµã±ùÌÇºùSTM32F407 OTG¿ª·¢°å
-  * ÌÔ    ±¦: https://yidianusb.taobao.com
+  * Êµï¿½ï¿½Æ½Ì¨: ï¿½Úµï¿½ï¿½ï¿½Çºï¿½STM32F407 OTGï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+  * ï¿½ï¿½    ï¿½ï¿½: https://yidianusb.taobao.com
   *
   ******************************************************************************
   */
@@ -46,9 +46,15 @@
 #define MSC_IN_EP                    0x82
 #define MSC_OUT_EP                   0x02
 
-#define HID_IN_EP                    0x81
+/* MTP endpoints (interface 0, replaces HID) */
+#define MTP_IN_EP                    0x81  /* Bulk IN  */
+#define MTP_OUT_EP                   0x01  /* Bulk OUT */
+#define MTP_CMD_EP                   0x83  /* Interrupt IN (event notifications) */
+#define MTP_MAX_PACKET               64
+#define MTP_CMD_PACKET_SIZE          28
 
-/*4 Bytes max*/
+/* Legacy HID defines â€“ kept so usbd_hid_core.c in the STM32 library compiles */
+#define HID_IN_EP                    0x81
 #define HID_IN_PACKET                4
 
 #ifdef USE_USB_OTG_HS  
